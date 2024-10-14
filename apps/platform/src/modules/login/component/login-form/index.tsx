@@ -23,9 +23,9 @@ export const LoginForm = (props: {
   return (
     <div className={styles.loginForm}>
       <Title level={3} className={styles.title}>
-        隐语登录
+        隐私计算平台
       </Title>
-      <p className={styles.slogan}>科技护航数据安全，开源加速数据流通</p>
+
       <Form
         name="basic"
         initialValues={{ remember: true }}
