@@ -119,7 +119,7 @@ export const ManagedNodeListComponent = () => {
                 type="link"
                 style={{ padding: 0 }}
                 onClick={() => {
-                  const search = `ownerId=${record.nodeId}`;
+                  const search = `nodeId=${record.nodeId}`;
                   openNewTab(pathname, '/node', search);
                 }}
               >
@@ -184,19 +184,7 @@ export const ManagedNodeListComponent = () => {
           <Button type="primary" onClick={showCreateNode}>
             注册新节点
           </Button>
-          <Button
-            type="link"
-            onClick={() => {
-              const url =
-                'https://www.secretflow.org.cn/zh-CN/docs/secretpad-all-in-one/center_deploy/platform_installation_guidelines_center';
-              const a = document.createElement('a');
-              a.href = url;
-              a.target = '_blank';
-              a.click();
-            }}
-          >
-            操作手册
-          </Button>
+
         </div>
       </div>
 

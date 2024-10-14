@@ -9,7 +9,7 @@ import {
 import { Avatar, Badge, Button, Dropdown, Empty, Popover, Space, Spin } from 'antd';
 import classNames from 'classnames';
 import { parse } from 'query-string';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { history, useLocation } from 'umi';
 
 import centerOfflineImgLink from '@/assets/center-offline.png';
@@ -26,7 +26,6 @@ import { LoginService } from '@/modules/login/login.service';
 import platformConfig from '@/platform.config';
 import { logout } from '@/services/secretpad/AuthController';
 import { get } from '@/services/secretpad/NodeController';
-import { get as getInst } from '@/services/secretpad/InstController';
 import { getImgLink } from '@/util/tracert-helper';
 import { getModel, Model, useModel } from '@/util/valtio-helper';
 
@@ -73,7 +72,7 @@ export const HeaderComponent = () => {
   const versionService = useModel(VersionService);
 
   const { search, pathname } = useLocation();
-  const { ownerId } = parse(search);
+  const { nodeId } = parse(search);
 
   const [avatarLink, setAvatarLink] = useState('');
   const [avatarOfflineLink, setAvatarOfflineLink] = useState('');
@@ -111,34 +110,7 @@ export const HeaderComponent = () => {
   };
 
   const items = [
-    {
-      key: 'version',
-      label: (
-        <Popover
-          content={content}
-          trigger="hover"
-          placement="left"
-          onOpenChange={handleOpenChange}
-        >
-          组件版本
-        </Popover>
-      ),
-    },
-    {
-      key: 'inst',
-      label: (
-        <div
-          onClick={() => {
-            history.push({
-              pathname: '/my-node',
-              search: `ownerId=${ownerId}`,
-            });
-          }}
-        >
-          我的机构
-        </div>
-      ),
-    },
+
     {
       key: 'changePassword',
       label: <div onClick={viewInstance.showChangePassword}>修改密码</div>,
@@ -150,30 +122,16 @@ export const HeaderComponent = () => {
     },
   ];
 
-  const isAutonomyMode = hasAccess({ type: [Platform.AUTONOMY] });
-
-  const platFormModeItems =
-    isAutonomyMode && pathname !== '/my-node'
-      ? items
-      : items.filter((item) => item.key !== 'inst');
-
   useEffect(() => {
-    const getNodeName = async (ownerId: string) => {
-      if (!ownerId) return;
-      if (isAutonomyMode) {
-        const info = await getInst({
-          instId: ownerId,
-        });
-        viewInstance.instName = info.data?.instName || '';
-      } else {
-        const info = await get({
-          nodeId: ownerId,
-        });
-        viewInstance.nodeName = info.data?.nodeName || '';
-      }
+    const getNodeName = async (nodeId: string) => {
+      if (!nodeId) return;
+      const info = await get({
+        nodeId,
+      });
+      viewInstance.nodeName = info.data?.nodeName || '';
     };
     if (viewInstance.showMyNode(pathname)) {
-      getNodeName(ownerId as string);
+      getNodeName(nodeId as string);
     }
   }, []);
 
@@ -193,24 +151,50 @@ export const HeaderComponent = () => {
     }
   }, [loginService?.userInfo]);
 
+  // if (viewInstance.showMyNode()) {
+  //   items.push({
+  //     key: 'myNode',
+  //     icon: (
+  //       <HddOutlined
+  //         onClick={() =>
+  //           history.push({
+  //             pathname: '/my-node',
+  //             search: `nodeId=${nodeId}`,
+  //           })
+  //         }
+  //       />
+  //     ),
+  //     label: (
+  //       <div
+  //         onClick={() =>
+  //           history.push({
+  //             pathname: '/my-node',
+  //             search: `nodeId=${nodeId}`,
+  //           })
+  //         }
+  //       >
+  //         我的节点
+  //       </div>
+  //     ),
+  //   });
+  // }
+
+
+
+//  {platformConfig.header.logo ? platformConfig.header.logo : <Logo />}
   return (
     <div className={styles['header-items']}>
       <div className={styles.left}>
         {
           <div
-            className={classNames({
-              [styles.logo]: isAutonomyMode,
-            })}
-            onClick={() => {
-              if (isAutonomyMode) {
-                history.push(`/edge?ownerId=${ownerId}&tab=workbench`);
-              }
-            }}
+            className={styles.logoTxt}
+
           >
-            {platformConfig.header.logo ? platformConfig.header.logo : <Logo />}
+            {'隐私计算平台'}
           </div>
         }
         <span className={styles.subTitle}>{layoutService.subTitle}</span>
+
         {viewInstance.showMyNode(pathname) && (
           <>
             <span className={styles.line} />
@@ -219,15 +203,13 @@ export const HeaderComponent = () => {
               onClick={() =>
                 history.push({
                   pathname: '/my-node',
-                  search: `ownerId=${ownerId}`,
+                  search: `nodeId=${nodeId}`,
                 })
               }
             >
               <DatabaseOutlined />
-              <span className={styles.nodeName}>
-                {isAutonomyMode ? viewInstance.instName : viewInstance.nodeName}
-              </span>
-              {isAutonomyMode ? '机构' : '节点'}
+              <span className={styles.nodeName}>{viewInstance.nodeName}</span>
+              节点
             </div>
           </>
         )}
@@ -248,41 +230,15 @@ export const HeaderComponent = () => {
 
         {platformConfig.guide && viewInstance.showGuide(pathname) && (
           <div className={styles.contentHeaderRight}>
-            <EdgeAuthWrapper>
-              <Button
-                type="primary"
-                shape="round"
-                size="small"
-                className={styles.smallGirlText}
-                onClick={() => {
-                  viewInstance.reExperience();
-                }}
-              >
-                体验新手引导
-              </Button>
-            </EdgeAuthWrapper>
+
           </div>
         )}
 
         {platformConfig.header.rightLinks === true && (
           <>
-            <span
-              className={styles.community}
-              onClick={() =>
-                viewInstance.goto('https://github.com/orgs/secretflow/discussions')
-              }
-            >
-              <GlobalOutlined />
-              隐语开源社区
-            </span>
+
             {/* <span className={styles.line} /> */}
-            <span
-              className={styles.help}
-              onClick={() => viewInstance.goto('https://www.secretflow.org.cn/docs')}
-            >
-              <ReadOutlined />
-              帮助中心
-            </span>
+
             {/* {viewInstance.showGoToHome(pathname) && <span className={styles.line} />} */}
           </>
         )}
@@ -293,7 +249,7 @@ export const HeaderComponent = () => {
               onClick={() =>
                 history.push({
                   pathname: '/message',
-                  search: `ownerId=${ownerId}&active=process`,
+                  search: `nodeId=${nodeId}&active=process`,
                 })
               }
             >
@@ -314,7 +270,7 @@ export const HeaderComponent = () => {
         <span className={styles.loginline} />
         <Dropdown
           menu={{
-            items: platFormModeItems,
+            items,
           }}
         >
           <div style={{ cursor: 'pointer' }} onClick={(e) => e.preventDefault()}>
@@ -345,8 +301,6 @@ export class HeaderModel extends Model {
   guideTourService = getModel(GuideTourService);
 
   nodeName = '';
-
-  instName = '';
 
   showChangePasswordModel = false;
 
